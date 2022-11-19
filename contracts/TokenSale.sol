@@ -3,6 +3,8 @@ pragma solidity ^0.8.9;
 
 interface IMyERC20Token {
     function mint(address to, uint256 amount) external;
+
+    function burnFrom(address account, uint256 amount) external;
 }
 
 contract TokenSale {
@@ -15,7 +17,11 @@ contract TokenSale {
     }
 
     function purchaseTokens() external payable {
-        uint256 amountToBeMinted = msg.value / ratio;
         paymentToken.mint(msg.sender, msg.value / ratio);
+    }
+
+    function burnTokens(uint256 amount) external {
+        paymentToken.burnFrom(msg.sender, amount);
+        payable(msg.sender).transfer(amount*ratio);
     }
 }

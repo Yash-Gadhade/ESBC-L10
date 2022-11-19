@@ -1,5 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { MyERC20, MyERC20__factory, TokenSale, TokenSale__factory } from "../typechain-types";
 
@@ -43,31 +44,74 @@ describe("NFT Shop", async () => {
 
     describe("When a user purchase an ERC20 from the Token contract", async () => {
         const ETH_SENT = ethers.utils.parseEther("1");
+        let balanceBefore: BigNumber;
+        let gasCost: BigNumber;
+        let balanceAfter: BigNumber;
 
         beforeEach(async () => {
+            balanceBefore = await accounts[1].getBalance();
             const tx = await tokenSaleContract.connect(accounts[1]).purchaseTokens({
                 value: ETH_SENT,
             });
-            await tx.wait();
+            const receipt = await tx.wait();
+            const gasUsage = receipt.gasUsed;
+            const gasPrice = receipt.effectiveGasPrice;
+            gasCost = gasUsage.mul(gasPrice);
+            balanceAfter = await accounts[1].getBalance();
         });
 
         it("charges the correct amount of ETH", async () => {
-            throw new Error("Not implemented");
+
+            const expecteBalance = balanceBefore.sub(ETH_SENT).sub(gasCost);
+            const error = expecteBalance.sub(balanceAfter);
+            expect(error).to.eq(0);
         });
 
         it("gives the correct amount of tokens", async () => {
             const balanceBN = await paymentTokenContract.balanceOf(accounts[1].address);
             expect(balanceBN).to.eq(ETH_SENT.div(TOKEN_ETH_RATIO))
         });
-    });
+        describe("When a user burns an ERC20 from the Token contract", async () => {
+            let gasCost: BigNumber;
+            beforeEach(async () => {
+                const allowTx = await paymentTokenContract.approve(
+                    tokenSaleContract.address,
+                    ETH_SENT.div(TOKEN_ETH_RATIO));
+                const receiptAllow = await allowTx.wait();
+                const gasUsageAllow = receiptAllow.gasUsed;
+                const gasPriceAllow = receiptAllow.effectiveGasPrice;
+                const burnTx = await tokenSaleContract.connect(accounts[1]).burnTokens(ETH_SENT.div(TOKEN_ETH_RATIO));
+                const receiptBurn = await burnTx.wait();
+                const gasUsageBurn = receiptBurn.gasUsed;
+                const gasPriceBurn = receiptBurn.effectiveGasPrice;
+                const gasCostAllow = gasUsageAllow
+                    .mul(gasPriceAllow)
+                const gasCostBurn = gasUsageBurn.mul(gasPriceBurn);
+                gasCost = gasCostAllow.add(gasCostBurn);
+            });
+            it("gives the correct amount of ETH", async () => {
+                throw new Error("Not implemented");
+            });
 
-    describe("When a user burns an ERC20 at the Shop contract", async () => {
-        it("gives the correct amount of ETH", async () => {
-            throw new Error("Not implemented");
-        });
+            it("burns the correct amount of tokens", async () => {
+                const balanceBN = await paymentTokenContract.balanceOf(accounts[1].address);
+                expect(balanceBN).to.eq(0);
+            });
 
-        it("burns the correct amount of tokens", async () => {
-            throw new Error("Not implemented");
+            describe("When a user burns an ERC20 at the Shop contract", async () => {
+                beforeEach(async () => {
+                    const tx = await paymentTokenContract.connect(accounts[1]).transfer(tokenSaleContract.address, ETH_SENT.div(TOKEN_ETH_RATIO));
+                    await tx.wait();
+                    const balanceAfter = await paymentTokenContract.balanceOf(tokenSaleContract.address,);
+                    console.log(balanceAfter);
+                });
+                it("gives the correct amount of ETH", async () => {
+                    throw new Error("Not implemented");
+                });
+                it("burns the correct amount of tokens", async () => {
+                    throw new Error("Not implemented");
+                });
+            });
         });
     });
 
