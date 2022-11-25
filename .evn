@@ -1,6 +1,0 @@
-MNEMONIC="reason cabbage lucky palm fog chair april loyal earn where seed describe"
-PRIVATE_KEY="<your private key here if you don't have a mnemonic seed>"
-INFURA_API_KEY="********************************"
-INFURA_API_SECRET="********************************"
-ALCHEMY_API_KEY="********************************"
-ETHERSCAN_API_KEY="********************************"
